@@ -12,6 +12,12 @@ export async function POST(req: Request) {
     passwordHash,
   },
 });
+const profile = await prisma.profile.create({
+  data: {
+    userId: user.id,
+    displayName: email.split("@")[0],
+  },
+});
 const existingUser = await prisma.user.findUnique({
   where: {
     email,
@@ -45,8 +51,13 @@ if (existingUser) {
 
   return NextResponse.json({
   success: true,
-  id: user.id,
-  email: user.email,
+  user: {
+    id: user.id,
+    email: user.email,
+  },
+  profile: {
+    displayName: profile.displayName,
+  },
 });
 
 }
