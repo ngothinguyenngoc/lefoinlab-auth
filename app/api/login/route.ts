@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/bcrypt";
+import { signToken } from "@/lib/jwt";
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
@@ -55,12 +56,25 @@ if (!isValidPassword) {
 }
 
   // User exists
-  return NextResponse.json({
+  const token = signToken({
+  userId: user.id,
+  email: user.email,
+});
+
+  const response = NextResponse.json({
   success: true,
   message: "Login successful",
-  user: {
-    id: user.id,
-    email: user.email,
-  },
 });
+
+response.cookies.set({
+  name: "lefoin_token",
+  value: token,
+  httpOnly: true,
+  sameSite: "lax",
+  secure: false, // local dev
+  path: "/",
+  maxAge: 60 * 60 * 24 * 7,
+});
+
+return response;
 }
