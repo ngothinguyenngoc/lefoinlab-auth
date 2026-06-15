@@ -2,18 +2,10 @@
 "use client";
 
 import { useState } from "react";
-import {
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams =
-    useSearchParams();
-
-  const callback =
-    searchParams.get("callback") || "/";
 
   const [email, setEmail] =
     useState("");
@@ -65,9 +57,14 @@ export default function LoginPage() {
         return;
       }
 
+      const callback =
+        new URLSearchParams(
+          window.location.search
+        ).get("callback") || "/";
+
       router.push(
-  result.redirect || callback
-);
+        result.redirect || callback
+      );
     } catch {
       setError(
         "Unable to connect to server."

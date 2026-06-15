@@ -1,119 +1,170 @@
 
-import { NextResponse } from "next/server";
+"use client";
 
-import { prisma } from "@/lib/prisma";
-import { verifyPassword } from "@/lib/bcrypt";
-import { signToken } from "@/lib/jwt";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
+export default function LoginPage() {
+  const router = useRouter();
 
-    const {
-      email,
-      password,
-      callback,
-    } = body;
+  const [email, setEmail] =
+    useState("");
 
-    if (!email || !password) {
-      return NextResponse.json(
+  const [password, setPassword] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  async function handleSubmit(
+    e: React.FormEvent<HTMLFormElement>
+  ) {
+    e.preventDefault();
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(
+        "/api/login",
         {
-          success: false,
-          message:
-            "Email and password are required.",
-        },
-        {
-          status: 400,
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
         }
       );
-    }
 
-    const user =
-      await prisma.user.findUnique({
-        where: {
-          email,
-        },
-      });
+      const result =
+        await res.json();
 
-    if (!user) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Invalid email or password.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
-
-    const isValidPassword =
-      await verifyPassword(
-        password,
-        user.passwordHash
-      );
-
-    if (!isValidPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          message:
-            "Invalid email or password.",
-        },
-        {
-          status: 401,
-        }
-      );
-    }
-
-    const token = signToken({
-      userId: user.id,
-      email: user.email,
-    });
-
-    const redirect =
-      callback ||
-      "https://lefoinlab.com";
-
-    const response =
-      NextResponse.json({
-        success: true,
-        message:
-          "Login successful.",
-        data: {
-          userId: user.id,
-          email: user.email,
-        },
-        redirect,
-      });
-
-    response.cookies.set({
-      name: "lefoin_token",
-      value: token,
-      httpOnly: true,
-      secure:
-        process.env.NODE_ENV ===
-        "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
-
-    return response;
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        message:
-          "Internal server error.",
-      },
-      {
-        status: 500,
+      if (
+        !res.ok ||
+        !result.success
+      ) {
+        setError(
+          result.message ||
+            "Login failed."
+        );
+        return;
       }
-    );
+
+      const callback =
+        new URLSearchParams(
+          window.location.search
+        ).get("callback") || "/";
+
+      router.push(
+        result.redirect || callback
+      );
+    } catch {
+      setError(
+        "Unable to connect to server."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
+
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-neutral-950 px-6">
+      <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-8 shadow-xl">
+
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-white">
+            LE FOIN®
+          </h1>
+
+          <p className="mt-2 text-neutral-400">
+            Identity Platform
+          </p>
+        </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
+        >
+          <div>
+            <label className="mb-2 block text-sm text-neutral-300">
+              Email
+            </label>
+
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) =>
+                setEmail(
+                  e.target.value
+                )
+              }
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-white outline-none focus:border-yellow-500"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm text-neutral-300">
+              Password
+            </label>
+
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) =>
+                setPassword(
+                  e.target.value
+                )
+              }
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-white outline-none focus:border-yellow-500"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-400">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-yellow-500 py-3 font-semibold text-black transition hover:bg-yellow-400 disabled:opacity-50"
+          >
+            {loading
+              ? "Signing in..."
+              : "Sign In"}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-neutral-400">
+          <a
+            href="/forgot-password"
+            className="hover:text-white"
+          >
+            Forgot password?
+          </a>
+        </div>
+
+        <div className="mt-3 text-center text-sm text-neutral-400">
+          Don't have an account?{" "}
+          <a
+            href="/register"
+            className="font-semibold text-yellow-500 hover:text-yellow-400"
+          >
+            Create one
+          </a>
+        </div>
+      </div>
+    </main>
+  );
 }
 
