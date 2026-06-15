@@ -16,8 +16,8 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          message:
-            "Not authenticated.",
+          message: "Not authenticated.",
+          data: null,
         },
         {
           status: 401,
@@ -28,21 +28,26 @@ export async function GET(
     const payload =
       verifyToken(token);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        userId: payload.userId,
-        email: payload.email,
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Authenticated.",
+        data: {
+          userId: payload.userId,
+          email: payload.email,
+        },
       },
-    });
-  } catch (error) {
-    console.error(error);
-
+      {
+        status: 200,
+      }
+    );
+  } catch {
     return NextResponse.json(
       {
         success: false,
         message:
           "Invalid or expired token.",
+        data: null,
       },
       {
         status: 401,
