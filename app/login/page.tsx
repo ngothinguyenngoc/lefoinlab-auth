@@ -2,15 +2,30 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import {
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams =
+    useSearchParams();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const callback =
+    searchParams.get("callback") || "/";
+
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
 
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>
@@ -21,29 +36,42 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
+      const res = await fetch(
+        "/api/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        }
+      );
 
-      const result = await res.json();
+      const result =
+        await res.json();
 
-      if (!res.ok || !result.success) {
-        setError(result.message || "Login failed");
+      if (
+        !res.ok ||
+        !result.success
+      ) {
+        setError(
+          result.message ||
+            "Login failed."
+        );
         return;
       }
 
-      // Sprint 1:
-      // Sau này sẽ redirect theo callback URL
-      router.push("/");
+      router.push(
+  result.redirect || callback
+);
     } catch {
-      setError("Unable to connect to server.");
+      setError(
+        "Unable to connect to server."
+      );
     } finally {
       setLoading(false);
     }
@@ -77,7 +105,9 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) =>
-                setEmail(e.target.value)
+                setEmail(
+                  e.target.value
+                )
               }
               className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-white outline-none focus:border-yellow-500"
             />
@@ -93,7 +123,9 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) =>
-                setPassword(e.target.value)
+                setPassword(
+                  e.target.value
+                )
               }
               className="w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-white outline-none focus:border-yellow-500"
             />
@@ -138,3 +170,4 @@ export default function LoginPage() {
     </main>
   );
 }
+
